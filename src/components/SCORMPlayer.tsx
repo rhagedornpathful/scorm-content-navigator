@@ -312,6 +312,14 @@ export function SCORMPlayer({
       if (packageId) {
         console.log('[SCORM] Loading from package:', packageId);
         
+        // First, let's see what files are actually available in the package
+        const packages = await SCORMPackageManager.getStoredPackages();
+        const currentPackage = packages.find(p => p.id === packageId);
+        console.log('[SCORM] Package manifest:', currentPackage?.manifest);
+        
+        // Check what files are available by trying some common ones
+        console.log('[SCORM] Trying to identify available files...');
+        
         // Try multiple possible file paths
         const possiblePaths = [
           item.href,
@@ -319,7 +327,14 @@ export function SCORMPlayer({
           `/${item.href}`, // Add leading slash
           item.href.toLowerCase(), // Try lowercase
           item.href.replace('.html', '.htm'), // Try .htm extension
-          item.href.replace('.htm', '.html') // Try .html extension
+          item.href.replace('.htm', '.html'), // Try .html extension
+          'index.html', // Common entry point
+          'index.htm', // Alternative entry point
+          'launch.html', // Another common entry point
+          'content/index.html', // Content in subdirectory
+          'course/index.html', // Course in subdirectory
+          'story.html', // Articulate Storyline
+          'story_html5.html' // Articulate Storyline HTML5
         ];
         
         let contentBlob: Blob | null = null;
