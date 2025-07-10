@@ -435,7 +435,7 @@ export function SCORMPlayer({
             
             <div className="flex items-center gap-2">
               <img 
-                src="/lovable-uploads/bcddd245-d755-4ff6-89ac-806b81b05380.png" 
+                src="/lovable-uploads/2d90e592-5f80-484d-b3c7-2baacd1b6118.png" 
                 alt="Pathful" 
                 className="h-5 w-auto"
               />
