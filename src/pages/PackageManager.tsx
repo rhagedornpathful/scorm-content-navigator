@@ -185,18 +185,14 @@ export function PackageManager() {
                   className="hidden"
                   id="scorm-upload"
                 />
-                <label htmlFor="scorm-upload">
                 <Button
                   variant="default"
                   className="mt-4 bg-emerald-600 hover:bg-emerald-700"
                   disabled={uploading}
-                  asChild
+                  onClick={() => document.getElementById('scorm-upload')?.click()}
                 >
-                    <span className="cursor-pointer">
-                    {uploading ? 'Processing Package...' : 'Select ZIP File'}
-                  </span>
-                  </Button>
-                </label>
+                  {uploading ? 'Processing Package...' : 'Select ZIP File'}
+                </Button>
               </div>
 
               {/* Upload Progress */}
