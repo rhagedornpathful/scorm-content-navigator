@@ -134,18 +134,11 @@ export function SCORMPlayer({
       }
     };
     
-    // Inject APIs into window with multiple access patterns
+    // Inject APIs into window - only safe assignments
     (window as any).API = enhancedAPI;
     (window as any).API_1484_11 = enhancedAPI;
-    (window as any).parent.API = enhancedAPI;
-    (window as any).top.API = enhancedAPI;
     
-    // Handle opener for popup content
-    if ((window as any).opener) {
-      (window as any).opener.API = enhancedAPI;
-    }
-    
-    // Some content looks for specific objects
+    // Safe assignments for SCORM content discovery
     (window as any).SCORM_API = enhancedAPI;
     (window as any).scorm = {
       api: enhancedAPI,
