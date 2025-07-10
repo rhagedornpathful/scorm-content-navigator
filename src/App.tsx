@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import { PackageManager } from "./pages/PackageManager";
+import { ContentAuthor } from "./pages/ContentAuthor";
+import { ContentBuilder } from "./pages/ContentBuilder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +22,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/packages" element={<PackageManager />} />
+            <Route path="/author" element={<ContentAuthor />} />
+            <Route path="/author/build/:templateId" element={<ContentBuilder />} />
             <Route path="/player/:packageId?" element={<Index />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

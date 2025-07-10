@@ -102,16 +102,15 @@ const Index = () => {
                   <div className="bg-purple-600 rounded-lg p-3 w-fit mb-4">
                     <FileText className="h-8 w-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3">iframe Integration</h3>
+                  <h3 className="text-xl font-semibold mb-3">Create New Content</h3>
                   <p className="text-slate-600 mb-4">
-                    Generate secure iframe embed codes for seamless platform integration
+                    Build interactive quizzes, assessments, and training modules from templates
                   </p>
                   <Button 
-                    variant="outline"
-                    className="w-full border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
-                    disabled
+                    onClick={() => navigate('/author')}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                   >
-                    Coming Soon
+                    Content Authoring Studio
                   </Button>
                 </div>
               </Card>
@@ -119,7 +118,7 @@ const Index = () => {
 
             {/* Team Features */}
             <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-8">
-              <h4 className="text-xl font-semibold mb-6 text-center">Platform Features</h4>
+              <h4 className="text-xl font-semibold mb-6 text-center">Content Creation Capabilities</h4>
               <div className="grid md:grid-cols-4 gap-6">
                 <div className="text-center">
                   <div className="bg-emerald-100 rounded-full p-3 w-fit mx-auto mb-3">
@@ -127,26 +126,26 @@ const Index = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <h5 className="font-semibold text-sm">SCORM Compliance</h5>
-                  <p className="text-xs text-slate-600 mt-1">1.2 & 2004 Support</p>
+                  <h5 className="font-semibold text-sm">Interactive Quizzes</h5>
+                  <p className="text-xs text-slate-600 mt-1">Multiple Choice & True/False</p>
                 </div>
                 <div className="text-center">
                   <div className="bg-blue-100 rounded-full p-3 w-fit mx-auto mb-3">
                     <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                     </svg>
                   </div>
-                  <h5 className="font-semibold text-sm">Secure Execution</h5>
-                  <p className="text-xs text-slate-600 mt-1">Sandboxed Content</p>
+                  <h5 className="font-semibold text-sm">Drag & Drop</h5>
+                  <p className="text-xs text-slate-600 mt-1">Interactive Sorting</p>
                 </div>
                 <div className="text-center">
                   <div className="bg-purple-100 rounded-full p-3 w-fit mx-auto mb-3">
                     <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                     </svg>
                   </div>
-                  <h5 className="font-semibold text-sm">Fast Loading</h5>
-                  <p className="text-xs text-slate-600 mt-1">Optimized Performance</p>
+                  <h5 className="font-semibold text-sm">Matching Games</h5>
+                  <p className="text-xs text-slate-600 mt-1">Connect Related Items</p>
                 </div>
                 <div className="text-center">
                   <div className="bg-orange-100 rounded-full p-3 w-fit mx-auto mb-3">
@@ -154,8 +153,8 @@ const Index = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                   </div>
-                  <h5 className="font-semibold text-sm">Progress Tracking</h5>
-                  <p className="text-xs text-slate-600 mt-1">Real-time Analytics</p>
+                  <h5 className="font-semibold text-sm">Auto SCORM Generation</h5>
+                  <p className="text-xs text-slate-600 mt-1">Compliant Package Creation</p>
                 </div>
               </div>
             </div>
