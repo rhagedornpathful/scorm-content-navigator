@@ -29,6 +29,7 @@ interface SCORMPlayerProps {
   baseUrl?: string;
   userId?: string;
   courseId?: string;
+  packageId?: string;
   className?: string;
 }
 
@@ -49,6 +50,7 @@ export function SCORMPlayer({
   baseUrl = '/demo/',
   userId = 'demo_user',
   courseId = 'demo_course',
+  packageId,
   className 
 }: SCORMPlayerProps) {
   const { toast } = useToast();
