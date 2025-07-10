@@ -101,7 +101,12 @@ export function ContentAuthor() {
   );
 
   const handleCreateContent = () => {
+    console.log('handleCreateContent called');
+    console.log('selectedTemplate:', selectedTemplate);
+    console.log('contentTitle:', contentTitle);
+    
     if (!selectedTemplate || !contentTitle.trim()) {
+      console.log('Validation failed - missing template or title');
       toast({
         title: "Missing Information",
         description: "Please select a template and enter a content title",
@@ -110,14 +115,25 @@ export function ContentAuthor() {
       return;
     }
 
+    console.log('Navigating to content builder...');
     // Navigate to the content builder with the selected template
-    navigate(`/author/build/${selectedTemplate.id}`, {
-      state: {
-        template: selectedTemplate,
-        title: contentTitle,
-        description: contentDescription
-      }
-    });
+    try {
+      navigate(`/author/build/${selectedTemplate.id}`, {
+        state: {
+          template: selectedTemplate,
+          title: contentTitle,
+          description: contentDescription
+        }
+      });
+      console.log('Navigation called successfully');
+    } catch (error) {
+      console.error('Navigation error:', error);
+      toast({
+        title: "Navigation Error",
+        description: "Failed to navigate to content builder",
+        variant: "destructive"
+      });
+    }
   };
 
   const getDifficultyColor = (difficulty: string) => {
