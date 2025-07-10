@@ -71,14 +71,86 @@ export function SCORMPlayer({
     score: ''
   });
 
-  // Initialize data store and SCORM API
+  // Initialize data store and SCORM API with comprehensive debugging
   useEffect(() => {
     dataStoreRef.current = new LocalSCORMDataStore(userId, courseId);
     
-    // Create and inject SCORM APIs into window
+    // Create SCORM API with enhanced debugging
     const { API, API_1484_11 } = createSCORMAPI(dataStoreRef.current);
-    (window as any).API = API;
-    (window as any).API_1484_11 = API_1484_11;
+    
+    // Enhanced API wrapper with comprehensive logging
+    const debugAPI = new Proxy(API, {
+      get: function(target: any, property: string) {
+        console.log('[API] Accessing property:', property);
+        return target[property];
+      }
+    });
+    
+    const enhancedAPI = {
+      LMSInitialize: function(param: string) {
+        console.log('[API] LMSInitialize called at', new Date().toISOString());
+        console.trace('Call stack:');
+        const result = API.LMSInitialize(param);
+        console.log('[API] LMSInitialize result:', result);
+        return result;
+      },
+      LMSFinish: function(param: string) {
+        console.log('[API] LMSFinish called');
+        const result = API.LMSFinish(param);
+        console.log('[API] LMSFinish result:', result);
+        return result;
+      },
+      LMSGetValue: function(element: string) {
+        const result = API.LMSGetValue(element);
+        console.log('[API] LMSGetValue:', element, '→', result);
+        return result;
+      },
+      LMSSetValue: function(element: string, value: string) {
+        console.log('[API] LMSSetValue:', element, '=', value);
+        const result = API.LMSSetValue(element, value);
+        console.log('[API] LMSSetValue result:', result);
+        return result;
+      },
+      LMSCommit: function(param: string) {
+        console.log('[API] LMSCommit called');
+        const result = API.LMSCommit(param);
+        console.log('[API] LMSCommit result:', result);
+        return result;
+      },
+      LMSGetLastError: function() {
+        const result = API.LMSGetLastError();
+        console.log('[API] LMSGetLastError result:', result);
+        return result;
+      },
+      LMSGetErrorString: function(errorCode: string) {
+        const result = API.LMSGetErrorString(errorCode);
+        console.log('[API] LMSGetErrorString result:', errorCode, '=', result);
+        return result;
+      },
+      LMSGetDiagnostic: function(errorCode: string) {
+        const result = API.LMSGetDiagnostic(errorCode);
+        console.log('[API] LMSGetDiagnostic result:', errorCode, '=', result);
+        return result;
+      }
+    };
+    
+    // Inject APIs into window with multiple access patterns
+    (window as any).API = enhancedAPI;
+    (window as any).API_1484_11 = enhancedAPI;
+    (window as any).parent.API = enhancedAPI;
+    (window as any).top.API = enhancedAPI;
+    
+    // Handle opener for popup content
+    if ((window as any).opener) {
+      (window as any).opener.API = enhancedAPI;
+    }
+    
+    // Some content looks for specific objects
+    (window as any).SCORM_API = enhancedAPI;
+    (window as any).scorm = {
+      api: enhancedAPI,
+      version: "1.2"
+    };
 
     loadManifest();
 
@@ -413,7 +485,42 @@ export function SCORMPlayer({
         lessonStatus: 'incomplete'
       }));
 
-      // Set up iframe event handlers before loading
+      // Set up iframe event handlers with enhanced debugging
+      const setupIframeDebugging = (iframe: HTMLIFrameElement) => {
+        iframe.addEventListener('load', function() {
+          try {
+            console.log('[SCORM] Setting up iframe debugging...');
+            
+            // Capture console logs from iframe
+            if (iframe.contentWindow) {
+              const contentWindow = iframe.contentWindow as any;
+              const originalLog = contentWindow.console.log;
+              const originalError = contentWindow.console.error;
+              
+              contentWindow.console.log = function(...args: any[]) {
+                console.log('[IFRAME LOG]:', ...args);
+                originalLog.apply(contentWindow.console, args);
+              };
+              
+              contentWindow.console.error = function(...args: any[]) {
+                console.error('[IFRAME ERROR]:', ...args);
+                originalError.apply(contentWindow.console, args);
+              };
+              
+              // Capture unhandled errors
+              iframe.contentWindow.addEventListener('error', function(e) {
+                console.error('[IFRAME UNCAUGHT ERROR]:', e.message, e.filename, e.lineno);
+              });
+            }
+          } catch (e) {
+            console.error('[DEBUG SETUP ERROR]:', e);
+          }
+        });
+      };
+      
+      // Set up iframe monitoring
+      let apiCheckInterval: NodeJS.Timeout;
+      
       iframeRef.current.onload = () => {
         console.log('[SCORM] Iframe loaded successfully');
         
@@ -422,6 +529,33 @@ export function SCORMPlayer({
           
           // Inject SCORM API into the iframe
           injectSCORMAPI(iframeRef.current.contentWindow);
+          
+          // Set up API monitoring
+          apiCheckInterval = setInterval(() => {
+            if (iframeRef.current?.contentWindow) {
+              console.log('[CHECK] iframe.contentWindow.API exists?', !!(iframeRef.current.contentWindow as any).API);
+              console.log('[CHECK] iframe.contentWindow.parent.API exists?', !!(iframeRef.current.contentWindow.parent as any).API);
+              
+              // Try to find what the content is looking for
+              try {
+                const scripts = iframeRef.current.contentDocument?.getElementsByTagName('script');
+                if (scripts) {
+                  for (let script of scripts) {
+                    if (script.textContent?.includes('API') || script.textContent?.includes('LMS')) {
+                      console.log('[CONTENT SCRIPT] Found API reference:', script.src || 'inline script');
+                    }
+                  }
+                }
+              } catch (e) {
+                console.log('[CHECK] Cannot access iframe content:', (e as Error).message);
+              }
+            }
+          }, 1000);
+          
+          // Stop checking after 10 seconds
+          setTimeout(() => {
+            if (apiCheckInterval) clearInterval(apiCheckInterval);
+          }, 10000);
           
           // Monitor iframe content
           setTimeout(() => {
@@ -438,6 +572,14 @@ export function SCORMPlayer({
               // Check if content is actually visible
               const hasVisibleContent = body && (body.scrollHeight > 0 || body.innerHTML.trim().length > 0);
               console.log('[SCORM] Has visible content:', hasVisibleContent);
+              
+              // Check for any visible elements
+              const allElements = body?.querySelectorAll('*');
+              const visibleElements = Array.from(allElements || []).filter(el => {
+                const style = window.getComputedStyle(el as Element);
+                return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+              });
+              console.log('[SCORM] Visible elements count:', visibleElements.length);
             }
           }, 1000);
         }
