@@ -1,0 +1,528 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  Play, 
+  Pause, 
+  SkipForward, 
+  SkipBack, 
+  BookOpen, 
+  Clock, 
+  CheckCircle2, 
+  AlertCircle,
+  Menu,
+  X,
+  FileText
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { createSCORMAPI, LocalSCORMDataStore } from '@/lib/scorm-api';
+import { SCORMManifestParser, type SCORMManifest, type SCORMItem } from '@/lib/scorm-manifest';
+
+interface SCORMPlayerProps {
+  manifestUrl?: string;
+  baseUrl?: string;
+  userId?: string;
+  courseId?: string;
+  className?: string;
+}
+
+interface PlayerState {
+  isLoading: boolean;
+  isPlaying: boolean;
+  currentItemIndex: number;
+  manifest: SCORMManifest | null;
+  playableItems: SCORMItem[];
+  showSidebar: boolean;
+  sessionTime: number;
+  lessonStatus: string;
+  score: string;
+}
+
+export function SCORMPlayer({ 
+  manifestUrl = '/demo/imsmanifest.xml',
+  baseUrl = '/demo/',
+  userId = 'demo_user',
+  courseId = 'demo_course',
+  className 
+}: SCORMPlayerProps) {
+  const { toast } = useToast();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const dataStoreRef = useRef<LocalSCORMDataStore>();
+  const sessionTimerRef = useRef<NodeJS.Timeout>();
+
+  const [state, setState] = useState<PlayerState>({
+    isLoading: true,
+    isPlaying: false,
+    currentItemIndex: 0,
+    manifest: null,
+    playableItems: [],
+    showSidebar: true,
+    sessionTime: 0,
+    lessonStatus: 'not attempted',
+    score: ''
+  });
+
+  // Initialize data store and SCORM API
+  useEffect(() => {
+    dataStoreRef.current = new LocalSCORMDataStore(userId, courseId);
+    
+    // Create and inject SCORM APIs into window
+    const { API, API_1484_11 } = createSCORMAPI(dataStoreRef.current);
+    (window as any).API = API;
+    (window as any).API_1484_11 = API_1484_11;
+
+    loadManifest();
+
+    return () => {
+      if (sessionTimerRef.current) {
+        clearInterval(sessionTimerRef.current);
+      }
+    };
+  }, [manifestUrl, userId, courseId]);
+
+  // Session timer
+  useEffect(() => {
+    if (state.isPlaying) {
+      sessionTimerRef.current = setInterval(() => {
+        setState(prev => ({ ...prev, sessionTime: prev.sessionTime + 1 }));
+      }, 1000);
+    } else {
+      if (sessionTimerRef.current) {
+        clearInterval(sessionTimerRef.current);
+        sessionTimerRef.current = undefined;
+      }
+    }
+
+    return () => {
+      if (sessionTimerRef.current) {
+        clearInterval(sessionTimerRef.current);
+      }
+    };
+  }, [state.isPlaying]);
+
+  const loadManifest = async () => {
+    try {
+      setState(prev => ({ ...prev, isLoading: true }));
+      
+      // For demo purposes, create a sample manifest
+      const sampleManifest = createDemoManifest();
+      const resolvedManifest = SCORMManifestParser.resolveItemResources(sampleManifest);
+      const playableItems = SCORMManifestParser.getPlayableItems(resolvedManifest);
+
+      setState(prev => ({
+        ...prev,
+        manifest: resolvedManifest,
+        playableItems,
+        isLoading: false
+      }));
+
+      if (playableItems.length > 0) {
+        loadSCO(0);
+      }
+
+    } catch (error) {
+      console.error('Error loading manifest:', error);
+      toast({
+        title: "Error Loading Course",
+        description: "Failed to load the SCORM manifest file.",
+        variant: "destructive"
+      });
+      setState(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  const createDemoManifest = (): SCORMManifest => {
+    return {
+      identifier: "demo_course",
+      version: "1.0",
+      title: "Demo SCORM Course",
+      defaultOrganization: "demo_org",
+      organizations: [{
+        identifier: "demo_org",
+        title: "Course Organization",
+        items: [
+          {
+            identifier: "lesson1",
+            title: "Introduction to SCORM",
+            href: "lesson1.html",
+            isVisible: true,
+            children: []
+          },
+          {
+            identifier: "lesson2", 
+            title: "SCORM API Implementation",
+            href: "lesson2.html",
+            isVisible: true,
+            children: []
+          },
+          {
+            identifier: "quiz1",
+            title: "Knowledge Check",
+            href: "quiz.html",
+            isVisible: true,
+            children: []
+          }
+        ]
+      }],
+      resources: [
+        {
+          identifier: "lesson1",
+          type: "webcontent",
+          href: "lesson1.html",
+          files: ["lesson1.html"]
+        },
+        {
+          identifier: "lesson2",
+          type: "webcontent", 
+          href: "lesson2.html",
+          files: ["lesson2.html"]
+        },
+        {
+          identifier: "quiz1",
+          type: "webcontent",
+          href: "quiz.html", 
+          files: ["quiz.html"]
+        }
+      ]
+    };
+  };
+
+  const loadSCO = useCallback((itemIndex: number) => {
+    if (!state.playableItems[itemIndex] || !iframeRef.current) return;
+
+    const item = state.playableItems[itemIndex];
+    const url = baseUrl + item.href;
+
+    // Create demo content for each SCO
+    const demoContent = createDemoContent(item);
+    const blob = new Blob([demoContent], { type: 'text/html' });
+    const contentUrl = URL.createObjectURL(blob);
+
+    // Initialize SCORM session
+    if (dataStoreRef.current) {
+      dataStoreRef.current.initialize();
+      dataStoreRef.current.setValue('cmi.core.lesson_location', item.identifier);
+      dataStoreRef.current.setValue('cmi.core.lesson_status', 'incomplete');
+    }
+
+    setState(prev => ({
+      ...prev,
+      currentItemIndex: itemIndex,
+      isPlaying: true,
+      lessonStatus: 'incomplete'
+    }));
+
+    // Load content in iframe
+    iframeRef.current.src = contentUrl;
+    
+    // Inject SCORM API after load
+    iframeRef.current.onload = () => {
+      if (iframeRef.current?.contentWindow) {
+        (iframeRef.current.contentWindow as any).API = (window as any).API;
+        (iframeRef.current.contentWindow as any).API_1484_11 = (window as any).API_1484_11;
+      }
+    };
+
+    toast({
+      title: "Loading Content",
+      description: `Now playing: ${item.title}`
+    });
+  }, [state.playableItems, baseUrl, toast]);
+
+  const createDemoContent = (item: SCORMItem): string => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>${item.title}</title>
+        <style>
+            body { 
+                font-family: system-ui, -apple-system, sans-serif; 
+                padding: 40px; 
+                line-height: 1.6;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                min-height: 100vh;
+                margin: 0;
+            }
+            .content {
+                background: rgba(255,255,255,0.1);
+                padding: 30px;
+                border-radius: 15px;
+                backdrop-filter: blur(10px);
+                max-width: 800px;
+                margin: 0 auto;
+            }
+            .complete-btn {
+                background: #4CAF50;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 16px;
+                margin-top: 20px;
+            }
+            .complete-btn:hover {
+                background: #45a049;
+            }
+            .progress-indicator {
+                background: rgba(255,255,255,0.2);
+                height: 6px;
+                border-radius: 3px;
+                margin: 20px 0;
+            }
+            .progress-bar {
+                background: #4CAF50;
+                height: 100%;
+                border-radius: 3px;
+                width: 0%;
+                transition: width 0.3s;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="content">
+            <h1>${item.title}</h1>
+            <div class="progress-indicator">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
+            <p>Welcome to this SCORM demonstration. This content is communicating with the SCORM API.</p>
+            <p><strong>Current Status:</strong> <span id="status">Incomplete</span></p>
+            <p><strong>Session Time:</strong> <span id="sessionTime">00:00:00</span></p>
+            
+            <h2>Learning Content</h2>
+            <p>This is a sample SCORM content object that demonstrates:</p>
+            <ul>
+                <li>SCORM API communication</li>
+                <li>Progress tracking</li>
+                <li>Score reporting</li>
+                <li>Session management</li>
+            </ul>
+            
+            <button class="complete-btn" onclick="completeLesson()">Mark as Complete</button>
+        </div>
+
+        <script>
+            let startTime = new Date();
+            let progress = 0;
+            
+            function updateProgress() {
+                progress += 10;
+                document.getElementById('progressBar').style.width = progress + '%';
+                
+                if (window.API) {
+                    window.API.LMSSetValue('cmi.core.score.raw', progress.toString());
+                    window.API.LMSCommit('');
+                }
+            }
+            
+            function updateSessionTime() {
+                const elapsed = Math.floor((new Date() - startTime) / 1000);
+                const hours = Math.floor(elapsed / 3600).toString().padStart(2, '0');
+                const minutes = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+                const seconds = (elapsed % 60).toString().padStart(2, '0');
+                
+                document.getElementById('sessionTime').textContent = hours + ':' + minutes + ':' + seconds;
+                
+                if (window.API) {
+                    window.API.LMSSetValue('cmi.core.session_time', hours + ':' + minutes + ':' + seconds);
+                }
+            }
+            
+            function completeLesson() {
+                if (window.API) {
+                    window.API.LMSSetValue('cmi.core.lesson_status', 'completed');
+                    window.API.LMSSetValue('cmi.core.score.raw', '100');
+                    window.API.LMSCommit('');
+                    window.API.LMSFinish('');
+                }
+                
+                document.getElementById('status').textContent = 'Completed';
+                document.getElementById('progressBar').style.width = '100%';
+                alert('Lesson completed successfully!');
+            }
+            
+            // Initialize SCORM
+            if (window.API) {
+                window.API.LMSInitialize('');
+                window.API.LMSSetValue('cmi.core.lesson_status', 'incomplete');
+            }
+            
+            // Update progress and time periodically
+            setInterval(updateProgress, 2000);
+            setInterval(updateSessionTime, 1000);
+        </script>
+    </body>
+    </html>
+    `;
+  };
+
+  const navigateToItem = (index: number) => {
+    if (index >= 0 && index < state.playableItems.length) {
+      loadSCO(index);
+    }
+  };
+
+  const formatTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const currentItem = state.playableItems[state.currentItemIndex];
+  const progress = state.playableItems.length > 0 ? 
+    ((state.currentItemIndex + 1) / state.playableItems.length) * 100 : 0;
+
+  if (state.isLoading) {
+    return (
+      <div className={cn("flex items-center justify-center min-h-[600px]", className)}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading SCORM content...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("h-screen flex flex-col bg-background", className)}>
+      {/* Header */}
+      <Card className="rounded-none border-x-0 border-t-0 shadow-sm">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setState(prev => ({ ...prev, showSidebar: !prev.showSidebar }))}
+            >
+              {state.showSidebar ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </Button>
+            
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <h1 className="font-semibold">{state.manifest?.title}</h1>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              {formatTime(state.sessionTime)}
+            </div>
+            
+            <Badge variant={state.lessonStatus === 'completed' ? 'default' : 'secondary'}>
+              {state.lessonStatus === 'completed' ? 
+                <CheckCircle2 className="h-3 w-3 mr-1" /> : 
+                <AlertCircle className="h-3 w-3 mr-1" />
+              }
+              {state.lessonStatus}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="px-4 pb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Course Progress</span>
+            <span className="text-sm text-muted-foreground">
+              {state.currentItemIndex + 1} of {state.playableItems.length}
+            </span>
+          </div>
+          <Progress value={progress} className="w-full" />
+        </div>
+      </Card>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        {state.showSidebar && (
+          <Card className="w-80 rounded-none border-y-0 border-l-0 flex flex-col">
+            <div className="p-4 border-b">
+              <h2 className="font-semibold mb-2">Course Content</h2>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateToItem(state.currentItemIndex - 1)}
+                  disabled={state.currentItemIndex === 0}
+                >
+                  <SkipBack className="h-4 w-4" />
+                </Button>
+                
+                <Button
+                  variant={state.isPlaying ? "secondary" : "default"}
+                  size="sm"
+                  onClick={() => setState(prev => ({ ...prev, isPlaying: !prev.isPlaying }))}
+                >
+                  {state.isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateToItem(state.currentItemIndex + 1)}
+                  disabled={state.currentItemIndex === state.playableItems.length - 1}
+                >
+                  <SkipForward className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <ScrollArea className="flex-1 p-2">
+              <div className="space-y-1">
+                {state.playableItems.map((item, index) => (
+                  <Button
+                    key={item.identifier}
+                    variant={index === state.currentItemIndex ? "secondary" : "ghost"}
+                    className="w-full justify-start text-left h-auto p-3"
+                    onClick={() => navigateToItem(index)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <FileText className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{item.title}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {index === state.currentItemIndex ? 'Current' : 
+                           index < state.currentItemIndex ? 'Completed' : 'Upcoming'}
+                        </div>
+                      </div>
+                      {index < state.currentItemIndex && (
+                        <CheckCircle2 className="h-4 w-4 text-learning-complete" />
+                      )}
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            </ScrollArea>
+          </Card>
+        )}
+
+        {/* Content Area */}
+        <div className="flex-1 flex flex-col">
+          {currentItem ? (
+            <div className="flex-1 bg-muted/20">
+              <iframe
+                ref={iframeRef}
+                title={currentItem.title}
+                className="w-full h-full border-0"
+                sandbox="allow-scripts allow-same-origin allow-forms"
+              />
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No content available</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
