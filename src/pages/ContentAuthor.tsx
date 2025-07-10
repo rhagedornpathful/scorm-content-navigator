@@ -115,25 +115,23 @@ export function ContentAuthor() {
       return;
     }
 
-    console.log('Navigating to content builder...');
+    console.log('About to navigate...');
+    const targetPath = `/author/build/${selectedTemplate.id}`;
+    console.log('Target path:', targetPath);
+    
+    const navigationState = {
+      template: selectedTemplate,
+      title: contentTitle,
+      description: contentDescription
+    };
+    console.log('Navigation state:', navigationState);
+    
     // Navigate to the content builder with the selected template
-    try {
-      navigate(`/author/build/${selectedTemplate.id}`, {
-        state: {
-          template: selectedTemplate,
-          title: contentTitle,
-          description: contentDescription
-        }
-      });
-      console.log('Navigation called successfully');
-    } catch (error) {
-      console.error('Navigation error:', error);
-      toast({
-        title: "Navigation Error",
-        description: "Failed to navigate to content builder",
-        variant: "destructive"
-      });
-    }
+    navigate(targetPath, {
+      state: navigationState
+    });
+    
+    console.log('Navigate function called');
   };
 
   const getDifficultyColor = (difficulty: string) => {
