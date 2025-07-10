@@ -286,12 +286,35 @@ export function SCORMPlayer({
       // Load content in iframe
       iframeRef.current.src = contentUrl;
       
-      // Inject SCORM API after load
+      // Enhanced iframe load handling with debugging
       iframeRef.current.onload = () => {
+        console.log('Iframe loaded successfully');
         if (iframeRef.current?.contentWindow) {
+          console.log('Content window available');
+          
+          // Inject SCORM API
           (iframeRef.current.contentWindow as any).API = (window as any).API;
           (iframeRef.current.contentWindow as any).API_1484_11 = (window as any).API_1484_11;
+          
+          // Check if content is visible
+          setTimeout(() => {
+            if (iframeRef.current?.contentDocument) {
+              const body = iframeRef.current.contentDocument.body;
+              console.log('Content body:', body?.innerHTML?.substring(0, 200));
+              console.log('Body dimensions:', {
+                scrollHeight: body?.scrollHeight,
+                scrollWidth: body?.scrollWidth,
+                clientHeight: body?.clientHeight,
+                clientWidth: body?.clientWidth
+              });
+            }
+          }, 1000);
         }
+      };
+      
+      // Add error handling for iframe
+      iframeRef.current.onerror = (error) => {
+        console.error('Iframe error:', error);
       };
 
       toast({
@@ -606,9 +629,16 @@ export function SCORMPlayer({
               <iframe
                 ref={iframeRef}
                 title={DOMPurify.sanitize(currentItem.title, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })}
-                className="w-full h-full border-0"
+                className="w-full h-full border-0 bg-white"
                 sandbox="allow-scripts allow-forms allow-modals allow-same-origin allow-popups allow-top-navigation-by-user-activation"
-                style={{ minHeight: '600px' }}
+                style={{ 
+                  minHeight: '600px',
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                  overflow: 'auto'
+                }}
+                allowFullScreen
               />
             </div>
           ) : (
