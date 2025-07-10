@@ -53,6 +53,21 @@ export function ContentBuilder() {
   const { toast } = useToast();
   
   const templateData = location.state;
+  
+  // Add error handling for missing template data
+  if (!templateData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">Template data not found</p>
+          <Button onClick={() => navigate('/author')}>
+            Return to Templates
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
   const [contentData, setContentData] = useState<ContentData>({
     title: templateData?.title || '',
     description: templateData?.description || '',
@@ -110,6 +125,37 @@ export function ContentBuilder() {
 
   const generateSCORMPackage = async () => {
     try {
+      // Validate content before generating
+      if (!contentData.title.trim()) {
+        toast({
+          title: "Validation Error",
+          description: "Content title is required",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (contentData.questions.length === 0) {
+        toast({
+          title: "Validation Error", 
+          description: "At least one question is required",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate each question
+      for (const question of contentData.questions) {
+        if (!question.title.trim() || !question.content.trim()) {
+          toast({
+            title: "Validation Error",
+            description: "All questions must have a title and content",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
       // Create HTML content for the authored content
       const htmlContent = generateHTMLContent();
       
@@ -163,9 +209,10 @@ export function ContentBuilder() {
 
       navigate('/packages');
     } catch (error) {
+      console.error('SCORM generation error:', error);
       toast({
         title: "Publishing Failed",
-        description: "Failed to create SCORM package",
+        description: "Failed to create SCORM package. Check console for details.",
         variant: "destructive"
       });
     }
@@ -497,18 +544,6 @@ export function ContentBuilder() {
 </manifest>`;
   };
 
-  if (!templateData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">Template data not found</p>
-          <Button onClick={() => navigate('/author')}>
-            Return to Templates
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50">
