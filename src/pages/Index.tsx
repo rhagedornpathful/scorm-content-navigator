@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Package, Upload } from 'lucide-react';
+import { Package, Upload, FileText } from 'lucide-react';
 import { SCORMPlayer } from '@/components/SCORMPlayer';
 
 const Index = () => {
@@ -12,7 +12,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950">
       {/* Header Navigation */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+      <div className="bg-slate-900 text-white shadow-lg border-b border-slate-700">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -21,14 +21,17 @@ const Index = () => {
                 alt="Pathful" 
                 className="h-8 w-auto"
               />
-              <h1 className="text-2xl font-bold text-foreground">SCORM Player</h1>
+              <div>
+                <h1 className="text-2xl font-bold">SCORM Content Manager</h1>
+                <p className="text-sm text-slate-300">Internal Team Tool</p>
+              </div>
             </div>
             <Button 
               onClick={() => navigate('/packages')}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700"
             >
               <Upload className="h-4 w-4" />
-              Manage Packages
+              Manage Content Library
             </Button>
           </div>
         </div>
@@ -40,54 +43,120 @@ const Index = () => {
       ) : (
         // Show welcome screen when no package is selected
         <div className="container mx-auto px-6 py-16">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl font-bold mb-6 text-foreground">
-              Welcome to Pathful SCORM Player
-            </h2>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              A secure, modern SCORM content player supporting SCORM 1.2 and SCORM 2004 standards
-            </p>
+          <div className="max-w-5xl mx-auto">
+            {/* Team Dashboard Header */}
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-full text-sm font-medium mb-6">
+                <Package className="h-4 w-4" />
+                Pathful Team Dashboard
+              </div>
+              <h2 className="text-4xl font-bold mb-4 text-slate-900">
+                SCORM Content Management System
+              </h2>
+              <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+                Upload, validate, and deploy SCORM packages for iframe integration across the Pathful platform
+              </p>
+            </div>
             
-            <div className="grid md:grid-cols-2 gap-6 mb-12">
-              <Card className="p-8 text-left">
-                <Upload className="h-12 w-12 text-primary mb-4" />
-                <h3 className="text-xl font-semibold mb-3">Upload Content</h3>
-                <p className="text-muted-foreground mb-4">
-                  Upload your SCORM packages and manage your learning content library
-                </p>
-                <Button 
-                  onClick={() => navigate('/packages')}
-                  className="w-full"
-                >
-                  Manage Packages
-                </Button>
+            {/* Action Cards */}
+            <div className="grid md:grid-cols-3 gap-6 mb-12">
+              <Card className="border-2 border-emerald-200 bg-emerald-50 hover:border-emerald-300 transition-colors">
+                <div className="p-8 text-left">
+                  <div className="bg-emerald-600 rounded-lg p-3 w-fit mb-4">
+                    <Upload className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">Upload & Validate</h3>
+                  <p className="text-slate-600 mb-4">
+                    Upload SCORM packages, validate manifest files, and prepare content for platform deployment
+                  </p>
+                  <Button 
+                    onClick={() => navigate('/packages')}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    Access Content Library
+                  </Button>
+                </div>
               </Card>
               
-              <Card className="p-8 text-left">
-                <Package className="h-12 w-12 text-primary mb-4" />
-                <h3 className="text-xl font-semibold mb-3">Try Demo</h3>
-                <p className="text-muted-foreground mb-4">
-                  Experience the SCORM player with built-in demonstration content
-                </p>
-                <Button 
-                  variant="outline"
-                  onClick={() => navigate('/player/demo')}
-                  className="w-full"
-                >
-                  Launch Demo
-                </Button>
+              <Card className="border-2 border-blue-200 bg-blue-50 hover:border-blue-300 transition-colors">
+                <div className="p-8 text-left">
+                  <div className="bg-blue-600 rounded-lg p-3 w-fit mb-4">
+                    <Package className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">Test & Preview</h3>
+                  <p className="text-slate-600 mb-4">
+                    Preview SCORM content in a secure environment before deploying to production iframes
+                  </p>
+                  <Button 
+                    variant="outline"
+                    onClick={() => navigate('/player/demo')}
+                    className="w-full border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
+                  >
+                    Launch Preview Mode
+                  </Button>
+                </div>
+              </Card>
+
+              <Card className="border-2 border-purple-200 bg-purple-50 hover:border-purple-300 transition-colors">
+                <div className="p-8 text-left">
+                  <div className="bg-purple-600 rounded-lg p-3 w-fit mb-4">
+                    <FileText className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">iframe Integration</h3>
+                  <p className="text-slate-600 mb-4">
+                    Generate secure iframe embed codes for seamless platform integration
+                  </p>
+                  <Button 
+                    variant="outline"
+                    className="w-full border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
+                    disabled
+                  >
+                    Coming Soon
+                  </Button>
+                </div>
               </Card>
             </div>
 
-            <div className="bg-white/50 dark:bg-slate-900/50 rounded-lg p-6 backdrop-blur-sm">
-              <h4 className="font-semibold mb-3">Features</h4>
-              <div className="grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
-                <div>✓ SCORM 1.2 & 2004 Support</div>
-                <div>✓ Secure Content Execution</div>
-                <div>✓ Progress Tracking</div>
-                <div>✓ Modern Interface</div>
-                <div>✓ Mobile Responsive</div>
-                <div>✓ Offline Capable</div>
+            {/* Team Features */}
+            <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-8">
+              <h4 className="text-xl font-semibold mb-6 text-center">Platform Features</h4>
+              <div className="grid md:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <div className="bg-emerald-100 rounded-full p-3 w-fit mx-auto mb-3">
+                    <svg className="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h5 className="font-semibold text-sm">SCORM Compliance</h5>
+                  <p className="text-xs text-slate-600 mt-1">1.2 & 2004 Support</p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-blue-100 rounded-full p-3 w-fit mx-auto mb-3">
+                    <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <h5 className="font-semibold text-sm">Secure Execution</h5>
+                  <p className="text-xs text-slate-600 mt-1">Sandboxed Content</p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-purple-100 rounded-full p-3 w-fit mx-auto mb-3">
+                    <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <h5 className="font-semibold text-sm">Fast Loading</h5>
+                  <p className="text-xs text-slate-600 mt-1">Optimized Performance</p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-orange-100 rounded-full p-3 w-fit mx-auto mb-3">
+                    <svg className="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <h5 className="font-semibold text-sm">Progress Tracking</h5>
+                  <p className="text-xs text-slate-600 mt-1">Real-time Analytics</p>
+                </div>
               </div>
             </div>
           </div>

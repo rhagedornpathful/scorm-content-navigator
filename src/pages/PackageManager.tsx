@@ -123,51 +123,58 @@ export function PackageManager() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950">
-      <div className="container mx-auto p-6">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Player
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-              <img 
-                src="/lovable-uploads/2d90e592-5f80-484d-b3c7-2baacd1b6118.png" 
-                alt="Pathful" 
-                className="h-8 w-auto"
-              />
-              SCORM Package Manager
-            </h1>
-            <p className="text-muted-foreground mt-1">Upload and manage your SCORM content packages</p>
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <div className="bg-slate-900 text-white shadow-lg border-b border-slate-700">
+        <div className="container mx-auto p-6">
+          <div className="flex items-center gap-4 mb-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Button>
+          </div>
+          <div className="flex items-center gap-4">
+            <img 
+              src="/lovable-uploads/2d90e592-5f80-484d-b3c7-2baacd1b6118.png" 
+              alt="Pathful" 
+              className="h-10 w-auto"
+            />
+            <div>
+              <h1 className="text-3xl font-bold">Content Library Manager</h1>
+              <p className="text-slate-300 mt-1">Upload, validate, and manage SCORM packages for platform deployment</p>
+            </div>
           </div>
         </div>
+      </div>
+
+      <div className="container mx-auto p-6">
 
         {/* Upload Section */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <Card className="mb-8 border-emerald-200 shadow-lg">
+          <CardHeader className="bg-emerald-50 border-b border-emerald-200">
+            <CardTitle className="flex items-center gap-2 text-emerald-800">
               <Upload className="h-5 w-5" />
               Upload SCORM Package
             </CardTitle>
-            <CardDescription>
-              Upload ZIP files containing SCORM 1.2 or SCORM 2004 content packages
+            <CardDescription className="text-emerald-700">
+              Upload ZIP files containing SCORM 1.2 or SCORM 2004 content packages for platform deployment
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="space-y-4">
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <div className="border-2 border-dashed border-emerald-300 bg-emerald-50 rounded-lg p-8 text-center">
+                <div className="bg-emerald-600 rounded-full p-4 w-fit mx-auto mb-4">
+                  <Package className="h-8 w-8 text-white" />
+                </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Choose SCORM package to upload</p>
-                  <p className="text-xs text-muted-foreground">
-                    Supports ZIP files up to 100MB containing imsmanifest.xml
+                  <p className="text-sm font-medium text-emerald-800">Choose SCORM package to upload</p>
+                  <p className="text-xs text-emerald-600">
+                    Supports ZIP files up to 100MB containing imsmanifest.xml • Ready for iframe integration
                   </p>
                 </div>
                 <input
@@ -179,34 +186,34 @@ export function PackageManager() {
                   id="scorm-upload"
                 />
                 <label htmlFor="scorm-upload">
-                  <Button
-                    variant="outline"
-                    className="mt-4"
-                    disabled={uploading}
-                    asChild
-                  >
+                <Button
+                  variant="default"
+                  className="mt-4 bg-emerald-600 hover:bg-emerald-700"
+                  disabled={uploading}
+                  asChild
+                >
                     <span className="cursor-pointer">
-                      {uploading ? 'Uploading...' : 'Select ZIP File'}
-                    </span>
+                    {uploading ? 'Processing Package...' : 'Select ZIP File'}
+                  </span>
                   </Button>
                 </label>
               </div>
 
               {/* Upload Progress */}
               {uploadProgress && (
-                <Card className="border-primary/20 bg-primary/5">
+                <Card className="border-emerald-200 bg-emerald-50">
                   <CardContent className="pt-6">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium capitalize">
+                        <span className="text-sm font-medium capitalize text-emerald-800">
                           {uploadProgress.stage.replace('_', ' ')}
                         </span>
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-sm text-emerald-600">
                           {uploadProgress.progress}%
                         </span>
                       </div>
                       <Progress value={uploadProgress.progress} className="h-2" />
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-emerald-600">
                         {uploadProgress.message}
                       </p>
                     </div>
@@ -218,23 +225,25 @@ export function PackageManager() {
         </Card>
 
         {/* Package List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <Card className="shadow-lg">
+          <CardHeader className="bg-slate-50 border-b">
+            <CardTitle className="flex items-center gap-2 text-slate-800">
               <FileText className="h-5 w-5" />
-              Uploaded Packages ({packages.length})
+              Content Library ({packages.length} packages)
             </CardTitle>
-            <CardDescription>
-              Manage your uploaded SCORM content packages
+            <CardDescription className="text-slate-600">
+              Manage uploaded SCORM packages • Ready for iframe deployment
             </CardDescription>
           </CardHeader>
           <CardContent>
             {packages.length === 0 ? (
               <div className="text-center py-12">
-                <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <h3 className="text-lg font-medium mb-2">No packages uploaded</h3>
-                <p className="text-muted-foreground mb-4">
-                  Upload your first SCORM package to get started
+                <div className="bg-slate-100 rounded-full p-6 w-fit mx-auto mb-4">
+                  <Package className="h-12 w-12 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-medium mb-2 text-slate-700">No packages in library</h3>
+                <p className="text-slate-500 mb-4">
+                  Upload your first SCORM package to start building your content library
                 </p>
               </div>
             ) : (
@@ -282,10 +291,10 @@ export function PackageManager() {
                               <Button
                                 size="sm"
                                 onClick={() => handlePlayPackage(pkg)}
-                                className="flex items-center gap-2"
+                                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700"
                               >
                                 <Play className="h-4 w-4" />
-                                Launch Course
+                                Test Package
                               </Button>
                               
                               <Button
