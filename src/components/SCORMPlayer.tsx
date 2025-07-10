@@ -208,18 +208,109 @@ export function SCORMPlayer({
     };
   };
 
+  // Create debug API wrapper
+  const createDebugAPI = useCallback((originalAPI: any) => {
+    return {
+      LMSInitialize: function(param: string) {
+        console.log('[SCORM] LMSInitialize called with:', param);
+        console.trace();
+        const result = originalAPI.LMSInitialize(param);
+        console.log('[SCORM] LMSInitialize result:', result);
+        return result;
+      },
+      LMSGetValue: function(element: string) {
+        console.log('[SCORM] LMSGetValue:', element);
+        const result = originalAPI.LMSGetValue(element);
+        console.log('[SCORM] LMSGetValue result:', element, '=', result);
+        return result;
+      },
+      LMSSetValue: function(element: string, value: string) {
+        console.log('[SCORM] LMSSetValue:', element, '=', value);
+        const result = originalAPI.LMSSetValue(element, value);
+        console.log('[SCORM] LMSSetValue result:', result);
+        return result;
+      },
+      LMSCommit: function(param: string) {
+        console.log('[SCORM] LMSCommit called with:', param);
+        const result = originalAPI.LMSCommit(param);
+        console.log('[SCORM] LMSCommit result:', result);
+        return result;
+      },
+      LMSFinish: function(param: string) {
+        console.log('[SCORM] LMSFinish called with:', param);
+        const result = originalAPI.LMSFinish(param);
+        console.log('[SCORM] LMSFinish result:', result);
+        return result;
+      },
+      LMSGetLastError: function() {
+        const result = originalAPI.LMSGetLastError();
+        console.log('[SCORM] LMSGetLastError result:', result);
+        return result;
+      },
+      LMSGetErrorString: function(errorCode: string) {
+        const result = originalAPI.LMSGetErrorString(errorCode);
+        console.log('[SCORM] LMSGetErrorString result:', errorCode, '=', result);
+        return result;
+      },
+      LMSGetDiagnostic: function(errorCode: string) {
+        const result = originalAPI.LMSGetDiagnostic(errorCode);
+        console.log('[SCORM] LMSGetDiagnostic result:', errorCode, '=', result);
+        return result;
+      }
+    };
+  }, []);
+
+  // Inject API into iframe window with proper discovery pattern
+  const injectSCORMAPI = useCallback((iframeWindow: Window) => {
+    console.log('[SCORM] Injecting API into iframe window');
+    
+    const debugAPI = createDebugAPI((window as any).API);
+    const debugAPI_1484_11 = createDebugAPI((window as any).API_1484_11);
+    
+    // Set the APIs directly on the iframe window
+    (iframeWindow as any).API = debugAPI;
+    (iframeWindow as any).API_1484_11 = debugAPI_1484_11;
+    
+    // Set parent references for API discovery
+    (iframeWindow as any).parent = window;
+    (iframeWindow as any).top = window;
+    
+    // Add the standard API discovery function to the iframe
+    (iframeWindow as any).findAPI = function(win: Window): any {
+      let attempts = 0;
+      console.log('[SCORM] Starting API search from window:', win);
+      
+      while ((!(win as any).API && !(win as any).API_1484_11) && (win.parent != null) && (win.parent != win) && attempts < 500) {
+        attempts++;
+        console.log(`[SCORM] API search attempt ${attempts}, checking parent window`);
+        win = win.parent;
+        
+        if ((win as any).API || (win as any).API_1484_11) {
+          console.log('[SCORM] Found API at attempt:', attempts);
+          break;
+        }
+      }
+      
+      const foundAPI = (win as any).API || (win as any).API_1484_11;
+      console.log('[SCORM] API discovery result:', foundAPI ? 'Found' : 'Not found');
+      return foundAPI;
+    };
+    
+    console.log('[SCORM] API injection complete');
+  }, [createDebugAPI]);
+
   const loadSCO = useCallback(async (itemIndex: number) => {
     if (!state.playableItems[itemIndex] || !iframeRef.current) return;
 
     const item = state.playableItems[itemIndex];
+    console.log('[SCORM] Loading SCO:', item.title, 'File:', item.href);
     
     try {
       let contentUrl: string;
       
       // If packageId is provided, load actual content from uploaded package
       if (packageId) {
-        console.log('Loading SCO for item:', item);
-        console.log('Looking for file:', item.href);
+        console.log('[SCORM] Loading from package:', packageId);
         
         // Try multiple possible file paths
         const possiblePaths = [
@@ -235,51 +326,61 @@ export function SCORMPlayer({
         let foundPath = '';
         
         for (const path of possiblePaths) {
-          console.log('Trying path:', path);
+          console.log('[SCORM] Trying path:', path);
           contentBlob = await SCORMPackageManager.getPackageFile(packageId, path);
           if (contentBlob) {
             foundPath = path;
-            console.log('Found content at path:', path);
+            console.log('[SCORM] Found content at path:', path);
             break;
           }
         }
         
         if (contentBlob) {
-          // Check the blob content type and size
-          console.log('Content blob type:', contentBlob.type);
-          console.log('Content blob size:', contentBlob.size);
+          console.log('[SCORM] Content blob type:', contentBlob.type);
+          console.log('[SCORM] Content blob size:', contentBlob.size);
           
-          // For HTML files, let's read the content first to ensure it's valid
+          // For HTML files, process the content
           if (item.href.toLowerCase().includes('.html') || item.href.toLowerCase().includes('.htm')) {
             const text = await contentBlob.text();
-            console.log('HTML content preview:', text.substring(0, 500));
+            console.log('[SCORM] HTML content preview:', text.substring(0, 500));
             
-            // Create a new blob with proper content type
-            const htmlBlob = new Blob([text], { type: 'text/html; charset=utf-8' });
+            // Inject API discovery script into the HTML content
+            const modifiedHTML = text.replace(
+              '</head>',
+              `<script>
+                console.log('[SCORM Content] Document loading...');
+                window.findAPI = function(win) {
+                  let attempts = 0;
+                  while ((!win.API && !win.API_1484_11) && (win.parent != null) && (win.parent != win) && attempts < 500) {
+                    attempts++;
+                    win = win.parent;
+                  }
+                  return win.API || win.API_1484_11;
+                };
+                
+                window.addEventListener('load', function() {
+                  console.log('[SCORM Content] Window loaded, searching for API...');
+                  window.API = window.findAPI(window);
+                  window.API_1484_11 = window.API;
+                  console.log('[SCORM Content] API found:', !!window.API);
+                });
+              </script>
+              </head>`
+            );
+            
+            const htmlBlob = new Blob([modifiedHTML], { type: 'text/html; charset=utf-8' });
             contentUrl = URL.createObjectURL(htmlBlob);
           } else {
             contentUrl = URL.createObjectURL(contentBlob);
           }
         } else {
-          console.error('Content file not found. Tried paths:', possiblePaths);
-          // Let's try to get all files in the package to see what's available
-          const packages = await SCORMPackageManager.getStoredPackages();
-          const currentPackage = packages.find(p => p.id === packageId);
-          console.log('Package manifest:', currentPackage?.manifest);
-          
-          throw new Error(`Content file ${item.href} not found in package. Check console for available files.`);
+          console.error('[SCORM] Content file not found. Tried paths:', possiblePaths);
+          throw new Error(`Content file ${item.href} not found in package.`);
         }
       } else {
         // Create demo content for demo mode
         const demoContent = createDemoContent(item);
-        
-        // Validate content before creating blob URL
-        if (!validateContentSecurity(demoContent)) {
-          console.error('Security validation failed for content');
-          return;
-        }
-        
-        const blob = new Blob([demoContent], { type: 'text/html' });
+        const blob = new Blob([demoContent], { type: 'text/html; charset=utf-8' });
         contentUrl = URL.createObjectURL(blob);
       }
 
@@ -297,39 +398,43 @@ export function SCORMPlayer({
         lessonStatus: 'incomplete'
       }));
 
-      // Load content in iframe
-      iframeRef.current.src = contentUrl;
-      
-      // Enhanced iframe load handling with debugging
+      // Set up iframe event handlers before loading
       iframeRef.current.onload = () => {
-        console.log('Iframe loaded successfully');
+        console.log('[SCORM] Iframe loaded successfully');
+        
         if (iframeRef.current?.contentWindow) {
-          console.log('Content window available');
+          console.log('[SCORM] Content window available');
           
-          // Inject SCORM API
-          (iframeRef.current.contentWindow as any).API = (window as any).API;
-          (iframeRef.current.contentWindow as any).API_1484_11 = (window as any).API_1484_11;
+          // Inject SCORM API into the iframe
+          injectSCORMAPI(iframeRef.current.contentWindow);
           
-          // Check if content is visible
+          // Monitor iframe content
           setTimeout(() => {
             if (iframeRef.current?.contentDocument) {
               const body = iframeRef.current.contentDocument.body;
-              console.log('Content body:', body?.innerHTML?.substring(0, 200));
-              console.log('Body dimensions:', {
+              console.log('[SCORM] Content body HTML length:', body?.innerHTML?.length || 0);
+              console.log('[SCORM] Body dimensions:', {
                 scrollHeight: body?.scrollHeight,
                 scrollWidth: body?.scrollWidth,
                 clientHeight: body?.clientHeight,
                 clientWidth: body?.clientWidth
               });
+              
+              // Check if content is actually visible
+              const hasVisibleContent = body && (body.scrollHeight > 0 || body.innerHTML.trim().length > 0);
+              console.log('[SCORM] Has visible content:', hasVisibleContent);
             }
           }, 1000);
         }
       };
       
-      // Add error handling for iframe
       iframeRef.current.onerror = (error) => {
-        console.error('Iframe error:', error);
+        console.error('[SCORM] Iframe error:', error);
       };
+
+      // Load content in iframe
+      console.log('[SCORM] Setting iframe src to:', contentUrl);
+      iframeRef.current.src = contentUrl;
 
       toast({
         title: "Loading Content",
@@ -337,14 +442,14 @@ export function SCORMPlayer({
       });
       
     } catch (error) {
-      console.error('Error loading SCO:', error);
+      console.error('[SCORM] Error loading SCO:', error);
       toast({
         title: "Error Loading Content",
         description: error instanceof Error ? error.message : "Failed to load content",
         variant: "destructive"
       });
     }
-  }, [state.playableItems, packageId, toast]);
+  }, [state.playableItems, packageId, toast, injectSCORMAPI]);
 
   const validateContentSecurity = (content: string): boolean => {
     // Basic security checks
@@ -649,7 +754,7 @@ export function SCORMPlayer({
                 ref={iframeRef}
                 title={DOMPurify.sanitize(currentItem.title, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })}
                 className="w-full h-full border-0 bg-white"
-                sandbox="allow-scripts allow-forms allow-modals allow-same-origin allow-popups allow-top-navigation-by-user-activation"
+                sandbox="allow-same-origin allow-scripts allow-forms"
                 style={{ 
                   minHeight: '600px',
                   width: '100%',
