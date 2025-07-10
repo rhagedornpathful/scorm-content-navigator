@@ -50,7 +50,7 @@ const Index = () => {
                 <Package className="h-4 w-4" />
                 Pathful Team Dashboard
               </div>
-              <h2 className="text-4xl font-bold mb-4 text-slate-900">
+              <h2 className="text-4xl font-bold mb-4 text-white">
                 SCORM Content Management System
               </h2>
               <p className="text-xl text-slate-600 max-w-3xl mx-auto">
