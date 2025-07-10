@@ -245,7 +245,21 @@ export function SCORMPlayer({
         }
         
         if (contentBlob) {
-          contentUrl = URL.createObjectURL(contentBlob);
+          // Check the blob content type and size
+          console.log('Content blob type:', contentBlob.type);
+          console.log('Content blob size:', contentBlob.size);
+          
+          // For HTML files, let's read the content first to ensure it's valid
+          if (item.href.toLowerCase().includes('.html') || item.href.toLowerCase().includes('.htm')) {
+            const text = await contentBlob.text();
+            console.log('HTML content preview:', text.substring(0, 500));
+            
+            // Create a new blob with proper content type
+            const htmlBlob = new Blob([text], { type: 'text/html; charset=utf-8' });
+            contentUrl = URL.createObjectURL(htmlBlob);
+          } else {
+            contentUrl = URL.createObjectURL(contentBlob);
+          }
         } else {
           console.error('Content file not found. Tried paths:', possiblePaths);
           // Let's try to get all files in the package to see what's available
@@ -623,9 +637,14 @@ export function SCORMPlayer({
         )}
 
         {/* Content Area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col relative">
           {currentItem ? (
-            <div className="flex-1 bg-muted/20">
+            <div className="flex-1 bg-white relative">
+              {/* Debug overlay */}
+              <div className="absolute top-0 left-0 bg-black text-white p-2 text-xs z-10 opacity-75">
+                Playing: {currentItem.title} | File: {currentItem.href}
+              </div>
+              
               <iframe
                 ref={iframeRef}
                 title={DOMPurify.sanitize(currentItem.title, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })}
@@ -635,17 +654,19 @@ export function SCORMPlayer({
                   minHeight: '600px',
                   width: '100%',
                   height: '100%',
-                  border: 'none',
-                  overflow: 'auto'
+                  border: '1px solid #ccc',
+                  overflow: 'auto',
+                  display: 'block'
                 }}
                 allowFullScreen
               />
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center">
+            <div className="flex-1 flex items-center justify-center bg-slate-50">
               <div className="text-center text-muted-foreground">
                 <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No content available</p>
+                <h3 className="font-medium mb-2">No Content Selected</h3>
+                <p className="text-sm">Select a lesson from the sidebar to start learning</p>
               </div>
             </div>
           )}
