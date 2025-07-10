@@ -607,7 +607,8 @@ export function SCORMPlayer({
                 ref={iframeRef}
                 title={DOMPurify.sanitize(currentItem.title, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })}
                 className="w-full h-full border-0"
-                sandbox="allow-scripts allow-forms allow-modals"
+                sandbox="allow-scripts allow-forms allow-modals allow-same-origin allow-popups allow-top-navigation-by-user-activation"
+                style={{ minHeight: '600px' }}
               />
             </div>
           ) : (
