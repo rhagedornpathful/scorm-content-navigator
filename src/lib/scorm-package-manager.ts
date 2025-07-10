@@ -211,6 +211,39 @@ export class SCORMPackageManager {
     }
   }
 
+  static async getPackageById(packageId: string): Promise<SCORMPackage | null> {
+    try {
+      const db = await this.openDatabase();
+      const transaction = db.transaction(['packages'], 'readonly');
+      const store = transaction.objectStore('packages');
+
+      return new Promise((resolve, reject) => {
+        const request = store.get(packageId);
+        request.onsuccess = () => {
+          if (request.result) {
+            resolve({
+              ...request.result,
+              uploadDate: new Date(request.result.uploadDate),
+              files: new Map() // Files loaded on demand
+            });
+          } else {
+            resolve(null);
+          }
+        };
+        request.onerror = () => reject(request.error);
+      });
+    } catch (error) {
+      // Fallback to localStorage
+      const packages = this.getStoredPackageList();
+      const pkg = packages.find(p => p.id === packageId);
+      return pkg ? {
+        ...pkg,
+        uploadDate: new Date(pkg.uploadDate),
+        files: new Map()
+      } : null;
+    }
+  }
+
   static async getPackageFile(packageId: string, filePath: string): Promise<Blob | null> {
     try {
       const db = await this.openDatabase();

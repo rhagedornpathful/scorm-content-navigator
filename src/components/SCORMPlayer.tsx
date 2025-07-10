@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { createSCORMAPI, LocalSCORMDataStore } from '@/lib/scorm-api';
 import { SCORMManifestParser, type SCORMManifest, type SCORMItem } from '@/lib/scorm-manifest';
+import { SCORMPackageManager } from '@/lib/scorm-package-manager';
 
 interface SCORMPlayerProps {
   manifestUrl?: string;
@@ -112,9 +113,21 @@ export function SCORMPlayer({
     try {
       setState(prev => ({ ...prev, isLoading: true }));
       
-      // For demo purposes, create a sample manifest
-      const sampleManifest = createDemoManifest();
-      const resolvedManifest = SCORMManifestParser.resolveItemResources(sampleManifest);
+      let manifest: SCORMManifest;
+      
+      // If packageId is provided, load the actual uploaded package
+      if (packageId) {
+        const scormPackage = await SCORMPackageManager.getPackageById(packageId);
+        if (!scormPackage) {
+          throw new Error(`Package with ID ${packageId} not found`);
+        }
+        manifest = scormPackage.manifest;
+      } else {
+        // For demo purposes, create a sample manifest
+        manifest = createDemoManifest();
+      }
+      
+      const resolvedManifest = SCORMManifestParser.resolveItemResources(manifest);
       const playableItems = SCORMManifestParser.getPlayableItems(resolvedManifest);
 
       setState(prev => ({
@@ -132,7 +145,7 @@ export function SCORMPlayer({
       console.error('Error loading manifest:', error);
       toast({
         title: "Error Loading Course",
-        description: "Failed to load the SCORM manifest file.",
+        description: error instanceof Error ? error.message : "Failed to load the SCORM content.",
         variant: "destructive"
       });
       setState(prev => ({ ...prev, isLoading: false }));
@@ -195,54 +208,75 @@ export function SCORMPlayer({
     };
   };
 
-  const loadSCO = useCallback((itemIndex: number) => {
+  const loadSCO = useCallback(async (itemIndex: number) => {
     if (!state.playableItems[itemIndex] || !iframeRef.current) return;
 
     const item = state.playableItems[itemIndex];
-    const url = baseUrl + item.href;
-
-    // Create demo content for each SCO with security validation
-    const demoContent = createDemoContent(item);
     
-    // Validate content before creating blob URL
-    if (!validateContentSecurity(demoContent)) {
-      console.error('Security validation failed for content');
-      return;
-    }
-    
-    const blob = new Blob([demoContent], { type: 'text/html' });
-    const contentUrl = URL.createObjectURL(blob);
-
-    // Initialize SCORM session
-    if (dataStoreRef.current) {
-      dataStoreRef.current.initialize();
-      dataStoreRef.current.setValue('cmi.core.lesson_location', item.identifier);
-      dataStoreRef.current.setValue('cmi.core.lesson_status', 'incomplete');
-    }
-
-    setState(prev => ({
-      ...prev,
-      currentItemIndex: itemIndex,
-      isPlaying: true,
-      lessonStatus: 'incomplete'
-    }));
-
-    // Load content in iframe
-    iframeRef.current.src = contentUrl;
-    
-    // Inject SCORM API after load
-    iframeRef.current.onload = () => {
-      if (iframeRef.current?.contentWindow) {
-        (iframeRef.current.contentWindow as any).API = (window as any).API;
-        (iframeRef.current.contentWindow as any).API_1484_11 = (window as any).API_1484_11;
+    try {
+      let contentUrl: string;
+      
+      // If packageId is provided, load actual content from uploaded package
+      if (packageId) {
+        const contentBlob = await SCORMPackageManager.getPackageFile(packageId, item.href);
+        if (contentBlob) {
+          contentUrl = URL.createObjectURL(contentBlob);
+        } else {
+          throw new Error(`Content file ${item.href} not found in package`);
+        }
+      } else {
+        // Create demo content for demo mode
+        const demoContent = createDemoContent(item);
+        
+        // Validate content before creating blob URL
+        if (!validateContentSecurity(demoContent)) {
+          console.error('Security validation failed for content');
+          return;
+        }
+        
+        const blob = new Blob([demoContent], { type: 'text/html' });
+        contentUrl = URL.createObjectURL(blob);
       }
-    };
 
-    toast({
-      title: "Loading Content",
-      description: `Now playing: ${item.title}`
-    });
-  }, [state.playableItems, baseUrl, toast]);
+      // Initialize SCORM session
+      if (dataStoreRef.current) {
+        dataStoreRef.current.initialize();
+        dataStoreRef.current.setValue('cmi.core.lesson_location', item.identifier);
+        dataStoreRef.current.setValue('cmi.core.lesson_status', 'incomplete');
+      }
+
+      setState(prev => ({
+        ...prev,
+        currentItemIndex: itemIndex,
+        isPlaying: true,
+        lessonStatus: 'incomplete'
+      }));
+
+      // Load content in iframe
+      iframeRef.current.src = contentUrl;
+      
+      // Inject SCORM API after load
+      iframeRef.current.onload = () => {
+        if (iframeRef.current?.contentWindow) {
+          (iframeRef.current.contentWindow as any).API = (window as any).API;
+          (iframeRef.current.contentWindow as any).API_1484_11 = (window as any).API_1484_11;
+        }
+      };
+
+      toast({
+        title: "Loading Content",
+        description: `Now playing: ${item.title}`
+      });
+      
+    } catch (error) {
+      console.error('Error loading SCO:', error);
+      toast({
+        title: "Error Loading Content",
+        description: error instanceof Error ? error.message : "Failed to load content",
+        variant: "destructive"
+      });
+    }
+  }, [state.playableItems, packageId, toast]);
 
   const validateContentSecurity = (content: string): boolean => {
     // Basic security checks
