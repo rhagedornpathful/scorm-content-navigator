@@ -91,9 +91,47 @@ export class LocalSCORMDataStore implements SCORMDataStore {
       return false;
     }
 
-    this.data[element] = value;
+    // Input validation and sanitization
+    if (!this.validateSCORMElement(element, value)) {
+      this.errorCode = "405"; // Invalid data
+      return false;
+    }
+
+    this.data[element] = this.sanitizeValue(value);
     this.errorCode = "0";
     return true;
+  }
+
+  private validateSCORMElement(element: string, value: string): boolean {
+    // Length validation
+    if (value.length > 4096) return false;
+
+    // Element-specific validation
+    switch (element) {
+      case "cmi.core.lesson_status":
+        return ["passed", "completed", "failed", "incomplete", "browsed", "not attempted"].includes(value);
+      case "cmi.core.exit":
+        return ["time-out", "suspend", "logout", "normal", ""].includes(value);
+      case "cmi.core.score.raw":
+      case "cmi.core.score.max":
+      case "cmi.core.score.min":
+        return /^-?\d*\.?\d*$/.test(value) && value.length <= 10;
+      case "cmi.core.session_time":
+      case "cmi.core.total_time":
+        return /^\d{2,4}:\d{2}:\d{2}(\.\d{1,2})?$/.test(value);
+      default:
+        return true;
+    }
+  }
+
+  private sanitizeValue(value: string): string {
+    // Remove potentially dangerous characters
+    return value
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .replace(/javascript:/gi, "")
+      .replace(/on\w+\s*=/gi, "")
+      .trim()
+      .substring(0, 4096);
   }
 
   commit(): boolean {
@@ -102,8 +140,10 @@ export class LocalSCORMDataStore implements SCORMDataStore {
       return false;
     }
 
-    // Here you would save to your backend
-    console.log("SCORM data committed:", this.data);
+    // Secure logging - only in development
+    if (process.env.NODE_ENV === "development") {
+      console.log("SCORM data committed");
+    }
     this.errorCode = "0";
     return true;
   }
@@ -119,6 +159,7 @@ export class LocalSCORMDataStore implements SCORMDataStore {
       "112": "LMS not initialized",
       "403": "Element is read only",
       "404": "Element not found",
+      "405": "Invalid data",
     };
     return errorMessages[errorCode] || "Unknown error";
   }

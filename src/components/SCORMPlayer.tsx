@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -198,8 +199,15 @@ export function SCORMPlayer({
     const item = state.playableItems[itemIndex];
     const url = baseUrl + item.href;
 
-    // Create demo content for each SCO
+    // Create demo content for each SCO with security validation
     const demoContent = createDemoContent(item);
+    
+    // Validate content before creating blob URL
+    if (!validateContentSecurity(demoContent)) {
+      console.error('Security validation failed for content');
+      return;
+    }
+    
     const blob = new Blob([demoContent], { type: 'text/html' });
     const contentUrl = URL.createObjectURL(blob);
 
@@ -234,12 +242,30 @@ export function SCORMPlayer({
     });
   }, [state.playableItems, baseUrl, toast]);
 
+  const validateContentSecurity = (content: string): boolean => {
+    // Basic security checks
+    const suspiciousPatterns = [
+      /<script[^>]*src\s*=\s*["'][^"']*["']/gi,
+      /javascript\s*:/gi,
+      /data\s*:\s*text\/html/gi,
+      /vbscript\s*:/gi
+    ];
+    
+    return !suspiciousPatterns.some(pattern => pattern.test(content));
+  };
+
   const createDemoContent = (item: SCORMItem): string => {
+    // Sanitize the title to prevent XSS
+    const sanitizedTitle = DOMPurify.sanitize(item.title, { 
+      ALLOWED_TAGS: [], 
+      ALLOWED_ATTR: [] 
+    });
+    
     return `
     <!DOCTYPE html>
     <html>
     <head>
-        <title>${item.title}</title>
+        <title>${sanitizedTitle}</title>
         <style>
             body { 
                 font-family: system-ui, -apple-system, sans-serif; 
@@ -288,7 +314,7 @@ export function SCORMPlayer({
     </head>
     <body>
         <div class="content">
-            <h1>${item.title}</h1>
+            <h1>${sanitizedTitle}</h1>
             <div class="progress-indicator">
                 <div id="progressBar" class="progress-bar"></div>
             </div>
@@ -508,9 +534,9 @@ export function SCORMPlayer({
             <div className="flex-1 bg-muted/20">
               <iframe
                 ref={iframeRef}
-                title={currentItem.title}
+                title={DOMPurify.sanitize(currentItem.title, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })}
                 className="w-full h-full border-0"
-                sandbox="allow-scripts allow-same-origin allow-forms"
+                sandbox="allow-scripts allow-forms allow-modals"
               />
             </div>
           ) : (
