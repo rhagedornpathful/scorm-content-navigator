@@ -434,7 +434,11 @@ export function SCORMPlayer({
             </Button>
             
             <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-primary" />
+              <img 
+                src="/lovable-uploads/bcddd245-d755-4ff6-89ac-806b81b05380.png" 
+                alt="Pathful" 
+                className="h-5 w-auto"
+              />
               <h1 className="font-semibold">{state.manifest?.title}</h1>
             </div>
           </div>

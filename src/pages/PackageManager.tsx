@@ -137,7 +137,14 @@ export function PackageManager() {
             Back to Player
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">SCORM Package Manager</h1>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+              <img 
+                src="/lovable-uploads/bcddd245-d755-4ff6-89ac-806b81b05380.png" 
+                alt="Pathful" 
+                className="h-8 w-auto"
+              />
+              SCORM Package Manager
+            </h1>
             <p className="text-muted-foreground mt-1">Upload and manage your SCORM content packages</p>
           </div>
         </div>

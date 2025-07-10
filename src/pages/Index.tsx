@@ -16,7 +16,11 @@ const Index = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Package className="h-8 w-8 text-primary" />
+              <img 
+                src="/lovable-uploads/bcddd245-d755-4ff6-89ac-806b81b05380.png" 
+                alt="Pathful" 
+                className="h-8 w-auto"
+              />
               <h1 className="text-2xl font-bold text-foreground">SCORM Player</h1>
             </div>
             <Button 
@@ -38,7 +42,7 @@ const Index = () => {
         <div className="container mx-auto px-6 py-16">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl font-bold mb-6 text-foreground">
-              Welcome to SCORM Player
+              Welcome to Pathful SCORM Player
             </h2>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               A secure, modern SCORM content player supporting SCORM 1.2 and SCORM 2004 standards
