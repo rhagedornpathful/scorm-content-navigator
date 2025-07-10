@@ -218,11 +218,42 @@ export function SCORMPlayer({
       
       // If packageId is provided, load actual content from uploaded package
       if (packageId) {
-        const contentBlob = await SCORMPackageManager.getPackageFile(packageId, item.href);
+        console.log('Loading SCO for item:', item);
+        console.log('Looking for file:', item.href);
+        
+        // Try multiple possible file paths
+        const possiblePaths = [
+          item.href,
+          item.href.replace(/^\/+/, ''), // Remove leading slashes
+          `/${item.href}`, // Add leading slash
+          item.href.toLowerCase(), // Try lowercase
+          item.href.replace('.html', '.htm'), // Try .htm extension
+          item.href.replace('.htm', '.html') // Try .html extension
+        ];
+        
+        let contentBlob: Blob | null = null;
+        let foundPath = '';
+        
+        for (const path of possiblePaths) {
+          console.log('Trying path:', path);
+          contentBlob = await SCORMPackageManager.getPackageFile(packageId, path);
+          if (contentBlob) {
+            foundPath = path;
+            console.log('Found content at path:', path);
+            break;
+          }
+        }
+        
         if (contentBlob) {
           contentUrl = URL.createObjectURL(contentBlob);
         } else {
-          throw new Error(`Content file ${item.href} not found in package`);
+          console.error('Content file not found. Tried paths:', possiblePaths);
+          // Let's try to get all files in the package to see what's available
+          const packages = await SCORMPackageManager.getStoredPackages();
+          const currentPackage = packages.find(p => p.id === packageId);
+          console.log('Package manifest:', currentPackage?.manifest);
+          
+          throw new Error(`Content file ${item.href} not found in package. Check console for available files.`);
         }
       } else {
         // Create demo content for demo mode
