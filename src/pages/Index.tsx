@@ -31,7 +31,7 @@ const Index = () => {
               className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700"
             >
               <Upload className="h-4 w-4" />
-              Manage Content Library
+              Upload SCORM File
             </Button>
           </div>
         </div>
@@ -73,7 +73,7 @@ const Index = () => {
                     onClick={() => navigate('/packages')}
                     className="w-full bg-emerald-600 hover:bg-emerald-700"
                   >
-                    Access Content Library
+                    Upload SCORM File
                   </Button>
                 </div>
               </Card>
